@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial;
+  background-color: #0f0f0f;
+  color: white;
+  margin: 0;
+  padding: 10px;
+}
+
+h1 {
+  color: #00ff88;
+  text-align: center;
+}
+
+h2 {
+    color: #fff;
+    text-align: center;
+}
+
+/* MENU */
+.menu {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.menu button {
+  flex: 1;
+  padding: 14px;
+  border-radius: 10px;
+}
+
+/* CONTAINER */
+.container {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #00ff88;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* INPUTS */
+input, select {
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  flex: 1 1 150px;
+}
+
+/* BOTÕES (geral) */
+button {
+  background-color: #00ff88;
+  color: black;
+  border: none;
+  padding: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+.btn-delete {
+  background: red;
+  color: white;
+  padding: 6px 10px;
+}
+
+/* TABELA */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1a1a1a;
+  min-width: 600px;
+}
+
+th {
+  background-color: #00ff88;
+  color: black;
+  padding: 10px;
+}
+
+td {
+  padding: 8px;
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+.alerta {
+  background-color: #330000;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+  input, select, button {
+    flex: 1 1 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>Gestão de Estoque </h1>
+<h2> Saídas </h2>
+
+<!-- MENU CORRIGIDO -->
+<div class="menu">
+  <button onclick="mostrarAba('estoque')">Controle de Saídas</button>
+  <button onclick="mostrarAba('historico')">Histórico de Movimentações</button>
+  <button onclick="mostrarAba('alerta')">Alertas de Estoque</button>
+</div>
+
+<!-- CONTEÚDO -->
+<div class="container">
+
+  <select id="produto" onchange="mostrarInfo()">
+    <option value="">Selecione o Produto</option>
+  </select>
+
+  <input type="text" id="codigo" readonly placeholder="Código">
+  <input type="text" id="estoqueAtual" readonly placeholder="Estoque Atual">
+
+  <input type="number" id="quantidade" placeholder="Quantidade Saída">
+
+  <div class="linha botoes">
+    <button onclick="saidaEstoque()">Dar Baixa</button>
+    <button onclick="zerarEstoque()">Zerar Estoque</button>
+    <button onclick="zerarHistorico()">Zerar Histórico</button>
+  </div>
+
+</div>
+
+</body>
+</html>
+
+<!-- ================= ESTOQUE ================= -->
+<div id="abaEstoque">
+<table>
+<thead>
+<tr>
+<th>Código</th>
+<th>Categoria</th>
+<th>Produto</th>
+<th>Quantidade</th>
+<th>Medida</th>
+</tr>
+</thead>
+<tbody id="tabela"></tbody>
+</table>
+</div>
+
+<!-- ================= HISTÓRICO ================= -->
+<div id="abaHistorico" style="display:none;">
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Código</th>
+<th>Categoria</th>
+<th>Produto</th>
+<th>Quantidade</th>
+<th>Medida</th>
+</tr>
+</thead>
+<tbody id="tabelaHistorico"></tbody>
+</table>
+</div>
+
+<!-- ================= ALERTA ================= -->
+<div id="abaAlerta" style="display:none;">
+<table>
+<thead>
+<tr>
+<th>Código</th>
+<th>Categoria</th>
+<th>Produto</th>
+<th>Quantidade</th>
+<th>Medida</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="tabelaAlerta"></tbody>
+</table>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, onValue, update, remove, push } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyCLfCY7VCgtW92f3Dlqst5yp6BTNqw5UuQ",
+  authDomain: "calendario-tucuvori.firebaseapp.com",
+  databaseURL: "https://calendario-tucuvori-default-rtdb.firebaseio.com",
+  projectId: "calendario-tucuvori",
+  storageBucket: "calendario-tucuvori.appspot.com",
+  messagingSenderId: "364406314929",
+  appId: "1:364406314929:web:ec7e7709bec677690b4f90"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const refEstoque = ref(db, "estoque");
+const refHistorico = ref(db, "movimentacoes");
+
+let lista = [];
+let selecionado = null;
+
+// =============================
+// 🔄 CARREGAR ESTOQUE
+// =============================
+onValue(refEstoque, snapshot => {
+  lista = [];
+  snapshot.forEach(child => {
+    lista.push({ id: child.key, ...child.val() });
+  });
+
+  carregarSelect();
+  render();
+  renderAlerta();
+});
+
+// =============================
+// 🔄 HISTÓRICO
+// =============================
+onValue(refHistorico, snapshot => {
+  tabelaHistorico.innerHTML = "";
+
+  snapshot.forEach(child => {
+    const item = child.val();
+
+    if(item.tipo === "SAIDA"){
+      const linha = document.createElement("tr");
+      const data = new Date(item.data).toLocaleString();
+
+      linha.innerHTML = `
+        <td>${data}</td>
+        <td>${item.codigo}</td>
+        <td>${item.categoria || "-"}</td>
+        <td>${item.nome}</td>
+        <td>${item.quantidade}</td>
+        <td>${item.medida || "-"}</td>
+      `;
+
+      tabelaHistorico.appendChild(linha);
+    }
+  });
+});
+
+// =============================
+// 🔽 SELECT
+// =============================
+function carregarSelect(){
+  produto.innerHTML = '<option value="">Selecione</option>';
+
+  lista.sort((a,b)=> a.codigo.localeCompare(b.codigo));
+
+  lista.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = `${item.codigo} - ${item.nome}`;
+    produto.appendChild(option);
+  });
+}
+
+// =============================
+// 🔽 INFO
+// =============================
+window.mostrarInfo = function(){
+  selecionado = lista.find(i => i.id === produto.value);
+
+  if(selecionado){
+    codigo.value = selecionado.codigo;
+    estoqueAtual.value = selecionado.quantidade;
+  }
+}
+
+// =============================
+// 📉 SAÍDA
+// =============================
+window.saidaEstoque = function(){
+
+  const qtd = Number(quantidade.value);
+
+  if(!selecionado) return alert("Selecione!");
+  if(qtd <= 0) return alert("Inválido!");
+  if(qtd > selecionado.quantidade) return alert("Sem estoque!");
+
+  const novaQtd = selecionado.quantidade - qtd;
+
+  if(novaQtd === 0){
+    remove(ref(db, "estoque/" + selecionado.id));
+  } else {
+    update(ref(db, "estoque/" + selecionado.id), { quantidade: novaQtd });
+  }
+
+  push(refHistorico, {
+    tipo: "SAIDA",
+    codigo: selecionado.codigo,
+    nome: selecionado.nome,
+    categoria: selecionado.categoria,
+    quantidade: qtd,
+    medida: selecionado.medida,
+    data: Date.now()
+  });
+
+  limpar();
+}
+
+// =============================
+// 🚨 ALERTA (≤ REGRA FINAL)
+// =============================
+function renderAlerta(){
+  tabelaAlerta.innerHTML = "";
+
+  lista.forEach(item => {
+
+    let alerta = false;
+    const medida = (item.medida || "").toLowerCase();
+
+    if(medida === "kg" && item.quantidade <= 2) alerta = true;
+    if(medida === "l" && item.quantidade <= 3) alerta = true;
+    if(medida === "un" && item.quantidade <= 30) alerta = true;
+
+    if(alerta){
+      const linha = document.createElement("tr");
+      linha.classList.add("alerta");
+
+      linha.innerHTML = `
+        <td>${item.codigo}</td>
+        <td>${item.categoria || "-"}</td>
+        <td>${item.nome}</td>
+        <td>${item.quantidade}</td>
+        <td>${item.medida}</td>
+        <td>⚠️ Baixo</td>
+      `;
+
+      tabelaAlerta.appendChild(linha);
+    }
+  });
+}
+
+// =============================
+// ✏️ EDIT INLINE
+// =============================
+function criarInput(td, valorOriginal, tipo, salvar){
+
+  const input = document.createElement("input");
+  input.value = valorOriginal;
+  input.type = tipo;
+
+  input.onblur = () => {
+    let novoValor = input.value.trim();
+
+    if(tipo === "number"){
+      novoValor = Number(novoValor);
+      if(isNaN(novoValor) || novoValor < 0){
+        td.textContent = valorOriginal;
+        return;
+      }
+    } else {
+      if(novoValor === ""){
+        td.textContent = valorOriginal;
+        return;
+      }
+    }
+
+    salvar(novoValor);
+    td.textContent = novoValor;
+  };
+
+  input.onkeydown = (e) => {
+    if(e.key === "Enter") input.blur();
+  };
+
+  td.innerHTML = "";
+  td.appendChild(input);
+  input.focus();
+}
+
+// =============================
+// 📊 TABELA
+// =============================
+function render(){
+  tabela.innerHTML = "";
+
+  lista.sort((a,b)=> a.codigo.localeCompare(b.codigo));
+
+  lista.forEach(item => {
+    const linha = document.createElement("tr");
+
+    const tdCodigo = document.createElement("td");
+    const tdCategoria = document.createElement("td");
+    const tdNome = document.createElement("td");
+    const tdQtd = document.createElement("td");
+    const tdMedida = document.createElement("td");
+
+    tdCodigo.textContent = item.codigo;
+    tdCategoria.textContent = item.categoria || "-";
+    tdNome.textContent = item.nome;
+    tdQtd.textContent = item.quantidade;
+    tdMedida.textContent = item.medida;
+
+    tdCategoria.ondblclick = () => {
+      criarInput(tdCategoria, item.categoria || "", "text", v => {
+        update(ref(db, "estoque/" + item.id), { categoria: v });
+      });
+    };
+
+    tdNome.ondblclick = () => {
+      criarInput(tdNome, item.nome, "text", v => {
+        update(ref(db, "estoque/" + item.id), { nome: v });
+      });
+    };
+
+    tdQtd.ondblclick = () => {
+      criarInput(tdQtd, item.quantidade, "number", v => {
+        update(ref(db, "estoque/" + item.id), { quantidade: v });
+      });
+    };
+
+    tdMedida.ondblclick = () => {
+      criarInput(tdMedida, item.medida, "text", v => {
+        update(ref(db, "estoque/" + item.id), { medida: v });
+      });
+    };
+
+    linha.appendChild(tdCodigo);
+    linha.appendChild(tdCategoria);
+    linha.appendChild(tdNome);
+    linha.appendChild(tdQtd);
+    linha.appendChild(tdMedida);
+
+    tabela.appendChild(linha);
+  });
+}
+
+// =============================
+// 💣 ZERAR
+// =============================
+window.zerarEstoque = function(){
+  if(!confirm("Zerar tudo?")) return;
+  lista.forEach(i => remove(ref(db, "estoque/" + i.id)));
+}
+
+// =============================
+// 🧹 LIMPAR
+// =============================
+function limpar(){
+  produto.value = "";
+  codigo.value = "";
+  estoqueAtual.value = "";
+  quantidade.value = "";
+}
+
+// =============================
+// 🔁 ABAS
+// =============================
+window.mostrarAba = function(aba){
+  abaEstoque.style.display = "none";
+  abaHistorico.style.display = "none";
+  abaAlerta.style.display = "none";
+
+  if(aba === "estoque") abaEstoque.style.display = "block";
+  if(aba === "historico") abaHistorico.style.display = "block";
+  if(aba === "alerta") abaAlerta.style.display = "block";
+}
+
+// =============================
+// 🔁 Zerar Histórico
+// =============================
+
+window.zerarHistorico = function(){
+  if(!confirm("Apagar todo o histórico?")) return;
+
+  onValue(refHistorico, snapshot => {
+    if(!snapshot.exists()) return;
+
+    snapshot.forEach(child => {
+      remove(ref(db, "movimentacoes/" + child.key));
+    });
+  }, { onlyOnce: true });
+}
+
+</script>
+
+</body>
+</html>
