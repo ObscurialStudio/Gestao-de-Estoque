@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estoque Inteligente</title>
+
+<style>
+body {
+  font-family: Arial;
+  background-color: #0f0f0f;
+  color: white;
+  margin: 10px;
+}
+
+h1 {
+  color: #00ff88;
+  text-align: center;
+}
+
+h2 {
+  color: #fff;
+  text-align: center;
+}
+
+/* MENU */
+.menu {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.menu button {
+  flex: 1;
+}
+
+/* CONTAINER */
+.container {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #00ff88;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* INPUTS */
+input, select {
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  flex: 1 1 150px;
+}
+
+/* BOTÕES */
+button {
+  background-color: #00ff88;
+  color: black;
+  border: none;
+  padding: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+/* TABELA */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1a1a1a;
+  min-width: 600px;
+}
+
+th {
+  background-color: #00ff88;
+  color: black;
+  padding: 10px;
+}
+
+td {
+  padding: 8px;
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+.btn-delete {
+  background: red;
+  color: white;
+  padding: 6px 10px;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+  input, select, button {
+    flex: 1 1 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>Gestão de Estoque</h1>
+<h2> Entradas</h2>
+
+<div class="menu">
+  <button onclick="mostrarAba('entrada')">Controle de Entradas</button>
+  <button onclick="mostrarAba('historico')">Histórico de Movimentações</button>
+</div>
+
+<div class="container">
+
+  <select id="categoria" onchange="preencherCodigo()">
+    <option value="">Categoria</option>
+  </select>
+
+  <input type="text" id="codigo" placeholder="Código" readonly>
+  <input type="text" id="nome" placeholder="Produto">
+  <input type="number" id="quantidade" placeholder="Qtd">
+
+  <select id="medida">
+    <option value="Un">Un</option>
+    <option value="Kg">Kg</option>
+    <option value="L">L</option>
+  </select>
+
+  <input type="date" id="validade">
+
+   <div class="linha botoes">
+    <button onclick="adicionarItem()">Adicionar</button>
+    <button onclick="zerarHistorico()">Limpar Histórico</button>
+  </div>
+
+</div>
+</div>
+
+<!-- ================= ENTRADA ================= -->
+<div id="abaEntrada">
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Categoria</th>
+<th>Código</th>
+<th>Nome</th>
+<th>Qtd</th>
+<th>Medida</th>
+<th>Validade</th>
+<th>Ação</th>
+</tr>
+</thead>
+<tbody id="tabela"></tbody>
+</table>
+</div>
+</div>
+
+<!-- ================= HISTÓRICO ================= -->
+<div id="abaHistorico" style="display:none;">
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Código</th>
+<th>Produto</th>
+<th>Quantidade</th>
+</tr>
+</thead>
+<tbody id="tabelaHistorico"></tbody>
+</table>
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove, update } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyCLfCY7VCgtW92f3Dlqst5yp6BTNqw5UuQ",
+  authDomain: "calendario-tucuvori.firebaseapp.com",
+  databaseURL: "https://calendario-tucuvori-default-rtdb.firebaseio.com",
+  projectId: "calendario-tucuvori"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const refEstoque = ref(db, "estoque");
+const refCadastro = ref(db, "itensSimples");
+const refHistorico = ref(db, "movimentacoes");
+
+let listaEstoque = [];
+let listaCadastro = [];
+
+// =============================
+// 🔽 CATEGORIAS
+// =============================
+onValue(refCadastro, snapshot => {
+  listaCadastro = [];
+
+  snapshot.forEach(child => {
+    listaCadastro.push(child.val());
+  });
+
+  carregarCategorias();
+});
+
+function carregarCategorias(){
+  categoria.innerHTML = '<option value="">Categoria</option>';
+
+  const categorias = [];
+
+  listaCadastro.forEach(item => {
+    if(!categorias.find(c => c.categoria === item.categoria)){
+      categorias.push(item);
+    }
+  });
+
+  categorias.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.categoria;
+    option.textContent = item.categoria;
+    option.dataset.codigo = item.codigo;
+    categoria.appendChild(option);
+  });
+}
+
+window.preencherCodigo = function(){
+  const cod = categoria.options[categoria.selectedIndex].dataset.codigo;
+  codigo.value = cod || "";
+}
+
+// =============================
+// 📦 ESTOQUE
+// =============================
+onValue(refEstoque, snapshot => {
+  listaEstoque = [];
+
+  snapshot.forEach(child => {
+    listaEstoque.push({ id: child.key, ...child.val() });
+  });
+
+  render();
+});
+
+// =============================
+// 📜 HISTÓRICO
+// =============================
+onValue(refHistorico, snapshot => {
+  tabelaHistorico.innerHTML = "";
+
+  const lista = [];
+
+  snapshot.forEach(child => {
+    const item = child.val();
+    if(item.tipo === "ENTRADA"){
+      lista.push(item);
+    }
+  });
+
+  lista.reverse().forEach(item => {
+    tabelaHistorico.innerHTML += `
+      <tr>
+        <td>${new Date(item.data).toLocaleString()}</td>
+        <td>${item.codigo}</td>
+        <td>${item.nome}</td>
+        <td>${item.quantidade}</td>
+      </tr>
+    `;
+  });
+});
+
+// =============================
+// ➕ ENTRADA
+// =============================
+window.adicionarItem = function(){
+
+  const item = {
+    categoria: categoria.value,
+    codigo: codigo.value,
+    nome: nome.value,
+    quantidade: Number(quantidade.value),
+    medida: medida.value,
+    validade: validade.value
+  };
+
+  if(!item.nome || !item.codigo || !item.quantidade){
+    alert("Preencha os campos!");
+    return;
+  }
+
+  const existente = listaEstoque.find(i =>
+    i.codigo === item.codigo &&
+    i.nome.toLowerCase() === item.nome.toLowerCase()
+  );
+
+  if(existente){
+    update(ref(db, "estoque/" + existente.id), {
+      quantidade: existente.quantidade + item.quantidade,
+      validade: item.validade || existente.validade
+    });
+  } else {
+    push(refEstoque, item);
+  }
+
+  push(refHistorico, {
+    tipo: "ENTRADA",
+    codigo: item.codigo,
+    nome: item.nome,
+    quantidade: item.quantidade,
+    data: Date.now()
+  });
+
+  limpar();
+}
+
+// =============================
+// 📊 TABELA
+// =============================
+function render(){
+  tabela.innerHTML = "";
+
+  const ordenado = [...listaEstoque].sort((a,b)=>
+    a.codigo.localeCompare(b.codigo)
+  );
+
+  ordenado.forEach(item => {
+    tabela.innerHTML += `
+      <tr>
+        <td>${item.categoria}</td>
+        <td>${item.codigo}</td>
+        <td>${item.nome}</td>
+        <td>${item.quantidade}</td>
+        <td>${item.medida}</td>
+        <td>${item.validade || "-"}</td>
+        <td>
+          <button class="btn-delete" onclick="deletar('${item.id}')">🗑️</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+// =============================
+// ❌ DELETAR
+// =============================
+window.deletar = function(id){
+  remove(ref(db, "estoque/" + id));
+}
+
+// =============================
+// 🧹 LIMPAR
+// =============================
+function limpar(){
+  document.querySelectorAll("input").forEach(i => i.value = "");
+}
+
+// =============================
+// 🧹 ZERAR HISTÓRICO
+// =============================
+window.zerarHistorico = function(){
+  if(!confirm("Apagar histórico?")) return;
+
+  onValue(refHistorico, snapshot => {
+    snapshot.forEach(child => {
+      remove(ref(db, "movimentacoes/" + child.key));
+    });
+  }, { onlyOnce: true });
+}
+
+// =============================
+// 🔁 ABAS
+// =============================
+window.mostrarAba = function(aba){
+  abaEntrada.style.display = "none";
+  abaHistorico.style.display = "none";
+
+  if(aba === "entrada") abaEntrada.style.display = "block";
+  if(aba === "historico") abaHistorico.style.display = "block";
+}
+
+</script>
+
+</body>
+</html>
