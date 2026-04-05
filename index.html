@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel de Controle</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #0f0f0f;
+  color: white;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+/* TÍTULO */
+h1 {
+  color: #00ff88;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+/* MENU */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 320px;
+}
+
+/* CARDS */
+.card {
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #00ff88;
+  cursor: pointer;
+  text-align: center;
+  transition: 0.25s;
+}
+
+.card:hover {
+  transform: translateY(-5px) scale(1.03);
+  background: #00ff88;
+  color: black;
+}
+
+/* ÍCONE */
+.icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+/* SUBTEXTO */
+.subtitle {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-top: 5px;
+}
+
+/* RESPONSIVO */
+@media (max-width: 400px) {
+  .menu {
+    width: 90%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>Central de Estoque</h1>
+
+<div class="menu">
+
+  <div class="card" onclick="ir('cadastro.html')">
+    <div class="icon">📦</div>
+    <div><strong>Itens</strong></div>
+    <div class="subtitle">Cadastrar produtos e categorias</div>
+  </div>
+
+  <div class="card" onclick="ir('entrada.html')">
+    <div class="icon">📥</div>
+    <div><strong>Entradas</strong></div>
+    <div class="subtitle">Adicionar produtos ao estoque</div>
+  </div>
+
+  <div class="card" onclick="ir('saida.html')">
+    <div class="icon">📤</div>
+    <div><strong>Saídas</strong></div>
+    <div class="subtitle">Registrar retiradas</div>
+  </div>
+
+</div>
+
+<script>
+function ir(pagina){
+  window.location.href = pagina;
+}
+</script>
+
+</body>
+</html>
