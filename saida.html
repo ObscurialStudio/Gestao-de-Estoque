@@ -323,9 +323,9 @@ function renderAlerta(){
     let alerta = false;
     const medida = (item.medida || "").toLowerCase();
 
-    if(medida === "kg" && item.quantidade <= 2) alerta = true;
-    if(medida === "l" && item.quantidade <= 3) alerta = true;
-    if(medida === "un" && item.quantidade <= 30) alerta = true;
+    if(medida === "kg" && item.quantidade <= 5) alerta = true;
+    if(medida === "l" && item.quantidade <= 5) alerta = true;
+    if(medida === "un" && item.quantidade <= 10) alerta = true;
 
     if(alerta){
       const linha = document.createElement("tr");
