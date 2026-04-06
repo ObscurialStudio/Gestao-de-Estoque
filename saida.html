@@ -9,8 +9,8 @@ body {
   font-family: Arial;
   background-color: #0f0f0f;
   color: white;
-  margin: 0;
-  padding: 10px;
+  margin: 10px;
+  overflow-x: hidden; /* 🔥 trava scroll lateral */
 }
 
 h1 {
@@ -19,22 +19,18 @@ h1 {
 }
 
 h2 {
-    color: #fff;
-    text-align: center;
+  text-align: center;
 }
 
 /* MENU */
 .menu {
   display: flex;
-  width: 100%;
   gap: 10px;
   margin-bottom: 15px;
 }
 
 .menu button {
   flex: 1;
-  padding: 14px;
-  border-radius: 10px;
 }
 
 /* CONTAINER */
@@ -58,7 +54,7 @@ input, select {
   flex: 1 1 150px;
 }
 
-/* BOTÕES (geral) */
+/* BOTÕES */
 button {
   background-color: #00ff88;
   color: black;
@@ -73,23 +69,19 @@ button:hover {
   opacity: 0.85;
 }
 
-.btn-delete {
-  background: red;
-  color: white;
-  padding: 6px 10px;
-}
-
-/* TABELA */
+/* TABELA CONTAINER (IMPORTANTE) */
 .table-container {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
+/* TABELA */
 table {
   width: 100%;
+  min-width: 600px; /* mantém layout da tabela */
   border-collapse: collapse;
   background: #1a1a1a;
-  min-width: 600px;
 }
 
 th {
@@ -119,19 +111,18 @@ td {
 
 <body>
 
-<h1>Gestão de Estoque </h1>
-<h2> Saídas </h2>
+<h1>Gestão de Estoque</h1>
+<h2>Saídas</h2>
 
-<!-- MENU CORRIGIDO -->
+<!-- MENU -->
 <div class="menu">
-  <button onclick="mostrarAba('estoque')">Controle de Saídas</button>
-  <button onclick="mostrarAba('historico')">Histórico de Movimentações</button>
-  <button onclick="mostrarAba('alerta')">Alertas de Estoque</button>
+  <button onclick="mostrarAba('estoque')">Saídas</button>
+  <button onclick="mostrarAba('historico')">Histórico</button>
+  <button onclick="mostrarAba('alerta')">Alertas</button>
 </div>
 
-<!-- CONTEÚDO -->
+<!-- FORM -->
 <div class="container">
-
   <select id="produto" onchange="mostrarInfo()">
     <option value="">Selecione o Produto</option>
   </select>
@@ -141,65 +132,59 @@ td {
 
   <input type="number" id="quantidade" placeholder="Quantidade Saída">
 
-  <div class="linha botoes">
-    <button onclick="saidaEstoque()">Dar Baixa</button>
-    <button onclick="zerarEstoque()">Zerar Estoque</button>
-    <button onclick="zerarHistorico()">Zerar Histórico</button>
-  </div>
-
+  <button onclick="saidaEstoque()">Dar Baixa</button>
+  <button onclick="zerarEstoque()">Zerar Estoque</button>
+  <button onclick="zerarHistorico()">Zerar Histórico</button>
 </div>
 
-</body>
-</html>
-
-<!-- ================= ESTOQUE ================= -->
-<div id="abaEstoque">
-<table>
-<thead>
-<tr>
-<th>Código</th>
-<th>Categoria</th>
-<th>Produto</th>
-<th>Quantidade</th>
-<th>Medida</th>
-</tr>
-</thead>
-<tbody id="tabela"></tbody>
-</table>
+<!-- ESTOQUE -->
+<div id="abaEstoque" class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Categoria</th>
+        <th>Produto</th>
+        <th>Quantidade</th>
+        <th>Medida</th>
+      </tr>
+    </thead>
+    <tbody id="tabela"></tbody>
+  </table>
 </div>
 
-<!-- ================= HISTÓRICO ================= -->
-<div id="abaHistorico" style="display:none;">
-<table>
-<thead>
-<tr>
-<th>Data</th>
-<th>Código</th>
-<th>Categoria</th>
-<th>Produto</th>
-<th>Quantidade</th>
-<th>Medida</th>
-</tr>
-</thead>
-<tbody id="tabelaHistorico"></tbody>
-</table>
+<!-- HISTÓRICO -->
+<div id="abaHistorico" class="table-container" style="display:none;">
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Código</th>
+        <th>Categoria</th>
+        <th>Produto</th>
+        <th>Quantidade</th>
+        <th>Medida</th>
+      </tr>
+    </thead>
+    <tbody id="tabelaHistorico"></tbody>
+  </table>
 </div>
 
-<!-- ================= ALERTA ================= -->
-<div id="abaAlerta" style="display:none;">
-<table>
-<thead>
-<tr>
-<th>Código</th>
-<th>Categoria</th>
-<th>Produto</th>
-<th>Quantidade</th>
-<th>Medida</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody id="tabelaAlerta"></tbody>
-</table>
+<!-- ALERTA -->
+<div id="abaAlerta" class="table-container" style="display:none;">
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Categoria</th>
+        <th>Produto</th>
+        <th>Quantidade</th>
+        <th>Medida</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="tabelaAlerta"></tbody>
+  </table>
 </div>
 
 <script type="module">
